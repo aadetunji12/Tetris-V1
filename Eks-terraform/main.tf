@@ -31,7 +31,7 @@ data "aws_subnet" "public" {
   vpc_id = data.aws_vpc.default.ids[count.index]
 }
 
-data "aws_subnet_ids" "public" {
+data "aws_subnet" "public" {
   ids = data.aws_subnet.public[*].id
 }
 
