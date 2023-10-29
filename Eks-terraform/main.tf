@@ -25,14 +25,19 @@ resource "aws_iam_role_policy_attachment" "example-AmazonEKSClusterPolicy" {
 data "aws_vpc" "default" {
   default = true
 }
-#get public subnets for the cluster
-data "aws_subnet_ids" "public" {
-  vpc_id = data.aws_vpc.default.id
+
+data "aws_subnet" "public" {
+  count = length(data.aws_vpc.default.id)
+  vpc_id = data.aws_vpc.default.ids[count.index]
 }
 
-# cluster provision
+data "aws_subnet_ids" "public" {
+  ids = data.aws_subnet.public[*].id
+}
+
+#cluster provision
 resource "aws_eks_cluster" "example" {
-  name     = "EKS_CLOUD"
+  name     = "EKS_CLOUD1"
   role_arn = aws_iam_role.example.arn
 
   vpc_config {
@@ -73,7 +78,7 @@ resource "aws_iam_role_policy_attachment" "example-AmazonEC2ContainerRegistryRea
   role       = aws_iam_role.example1.name
 }
 
-# create node group
+#create node group
 resource "aws_eks_node_group" "example" {
   cluster_name    = aws_eks_cluster.example.name
   node_group_name = "Node-cloud"
