@@ -21,30 +21,26 @@ resource "aws_iam_role_policy_attachment" "example-AmazonEKSClusterPolicy" {
   role       = aws_iam_role.example.name
 }
 
-#get VPC data
+#get vpc data
 data "aws_vpc" "default" {
   default = true
 }
-
 #get public subnets for the cluster
 data "aws_subnet_ids" "public" {
   vpc_id = data.aws_vpc.default.id
 }
 
-# Cluster provision
+# cluster provision
 resource "aws_eks_cluster" "example" {
   name     = "EKS_CLOUD1"
   role_arn = aws_iam_role.example.arn
 
   vpc_config {
     subnet_ids = data.aws_subnet_ids.public.ids
-    # Specify the availability zone for your EKS cluster
-    availability_zones = ["us-east-1a"]
+    tags = {
+      "Name" = "eks-cluster"
+    }
   }
-
-  # Ensure that IAM Role permissions are created before and deleted after EKS Cluster handling.
-  # Otherwise, EKS will not be able to properly delete EKS managed EC2 infrastructure such as Security Groups.
-  depends_on = [aws_iam_role_policy_attachment.example-AmazonEKSClusterPolicy]
 }
 
 resource "aws_iam_role" "example1" {
@@ -52,14 +48,14 @@ resource "aws_iam_role" "example1" {
 
   assume_role_policy = jsonencode({
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action = "sts:AssumeRole",
+      Effect = "Allow",
       Principal = {
         Service = "ec2.amazonaws.com"
       }
-    }]
+    }],
     Version = "2012-10-17"
-  }
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "example-AmazonEKSWorkerNodePolicy" {
@@ -77,7 +73,7 @@ resource "aws_iam_role_policy_attachment" "example-AmazonEC2ContainerRegistryRea
   role       = aws_iam_role.example1.name
 }
 
-# Create node group
+# create node group
 resource "aws_eks_node_group" "example" {
   cluster_name    = aws_eks_cluster.example.name
   node_group_name = "Node-cloud"
@@ -91,8 +87,6 @@ resource "aws_eks_node_group" "example" {
   }
   instance_types = ["t2.medium"]
 
-  # Ensure that IAM Role permissions are created before and deleted after EKS Node Group handling.
-  # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.
   depends_on = [
     aws_iam_role_policy_attachment.example-AmazonEKSWorkerNodePolicy,
     aws_iam_role_policy_attachment.example-AmazonEKS_CNI_Policy,
