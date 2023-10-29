@@ -27,19 +27,13 @@ data "aws_vpc" "default" {
   default = true
 }
 
-# Get public subnets for the cluster
-data "aws_subnet" "public" {
-  count = length(data.aws_vpc.default.subnet_ids)
-  ids   = data.aws_vpc.default.subnet_ids[count.index]
-}
-
 # Cluster provisioning
 resource "aws_eks_cluster" "example" {
   name     = "EKS_CLOUD"
   role_arn = aws_iam_role.example.arn
 
   vpc_config {
-    subnet_ids = data.aws_subnet.public[*].id
+    subnet_ids = data.aws_vpc.default.subnet_ids
   }
 
   # Ensure that IAM Role permissions are created before and deleted after EKS Cluster handling.
@@ -51,7 +45,7 @@ resource "aws_eks_node_group" "example" {
   cluster_name    = aws_eks_cluster.example.name
   node_group_name = "Node-cloud"
   node_role_arn   = aws_iam_role.example.arn
-  subnet_ids      = data.aws_subnet.public[*].id
+  subnet_ids      = data.aws_vpc.default.subnet_ids
 
   scaling_config {
     desired_size = 1
