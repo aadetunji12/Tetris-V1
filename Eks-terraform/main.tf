@@ -28,8 +28,11 @@ data "aws_vpc" "default" {
 }
 
 # Get public subnets for the cluster
-data "aws_subnet_ids" "public" {
-  vpc_id = data.aws_vpc.default.id
+data "aws_subnet" "public" {
+  count = length(data.aws_vpc.default.subnet_ids)
+  ids   = data.aws_vpc.default.subnet_ids[count.index]
+}
+
 }
 
 # Cluster provisioning
